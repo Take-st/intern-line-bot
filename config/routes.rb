@@ -9,6 +9,7 @@ Rails.application.routes.draw do
   root 'welcome#index'
 
   # for LINE webhook
+  # ここがwebhook関連で応答メッセージを所得してくる。
   post '/callback' => 'webhook#callback'
 
   # Example of regular route:
