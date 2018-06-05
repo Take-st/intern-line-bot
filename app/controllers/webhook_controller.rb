@@ -22,7 +22,7 @@ class WebhookController < ApplicationController
     end
 
     #
-    events = client.parse_events_from(body)
+    events = client.parse_events_from(body) #whats type of the data?
     events.each { |event|
       case event
       when Line::Bot::Event::Message
@@ -32,16 +32,13 @@ class WebhookController < ApplicationController
             type: 'text',
             text: event.message['text'] + "やねん"
           }
+          logger.debug("テキスト送ったんやなぁ")
           client.reply_message(event['replyToken'], message)
         when Line::Bot::Event::MessageType::Image, Line::Bot::Event::MessageType::Video
           response = client.get_message_content(event.message['id'])
           tf = Tempfile.open("content")
           tf.write(response.body)
-          message = {
-            type: 'text',
-            text: "textしか対応してないねん"
-          }
-          client.reply_message(event['replyToken'], message)
+          logger.debug(event.type)
         end
       end
     }
