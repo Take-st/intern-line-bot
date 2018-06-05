@@ -1,4 +1,5 @@
 require 'line/bot'
+#LINEのライブラリをとる。
 
 class WebhookController < ApplicationController
   protect_from_forgery with: :null_session # CSRF対策無効化
@@ -11,13 +12,16 @@ class WebhookController < ApplicationController
   end
 
   def callback
+    #LINEのメッセージAPIがpostしてきた中身が取れる
     body = request.body.read
 
+    #LINEからのアクセスかどうか調べる
     signature = request.env['HTTP_X_LINE_SIGNATURE']
     unless client.validate_signature(body, signature)
       head 470
     end
 
+    #LINEからのアクセスかどうか調べる
     events = client.parse_events_from(body)
     events.each { |event|
       case event
@@ -26,7 +30,7 @@ class WebhookController < ApplicationController
         when Line::Bot::Event::MessageType::Text
           message = {
             type: 'text',
-            text: event.message['text']
+            text: event.message['text'] + "やねん"
           }
           client.reply_message(event['replyToken'], message)
         when Line::Bot::Event::MessageType::Image, Line::Bot::Event::MessageType::Video
