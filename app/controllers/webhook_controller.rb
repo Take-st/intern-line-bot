@@ -1,3 +1,4 @@
+require 'active_support'
 require 'line/bot'
 #LINEのライブラリをとる。
 
@@ -11,57 +12,41 @@ class WebhookController < ApplicationController
     }
   end
 
+  def pluralize(word)
+    return word.pluralize
+  end
+
+
   def reply(input, token)
+    message = {
+      type: 'text',
+      text: ""
+    }
+
     case input
     when "あ"
-      message = {
-        type: 'text',
-        text: "「あ」は一番しょうもないで。"
-      }
-    when "dog"
-      message = {
-        type: 'text',
-        text: "犬"
-      }
-    when "cat"
-      message = {
-        type: 'text',
-        text: "ねこ"
-      }
-    when "egg"
-      message = {
-        type: 'text',
-        text: "卵"
-      }
-    when "bag"
-      message = {
-        type: 'text',
-        text: "カバン"
-      }
-    when "fish"
-      message = {
-        type: 'text',
-        text: "魚"
-      }
-    when "fruit"
-      message = {
-        type: 'text',
-        text: "果物"
-      }
-    when "flower"
-      message = {
-        type: 'text',
-        text: "花"
-      }
+      message['text'] = "あ は一番しょうもないで。"
+    when "a"
+      message['text'] = "a は一番しょうもないで。"
+    when "dog", pluralize("dog")
+      message['text'] = "犬"
+    when "cat", pluralize("cat")
+      message['text'] = "ねこ"
+    when "egg", pluralize("egg")
+      message['text'] = "卵"
+    when "bag", pluralize("bag")
+      message['text'] = "カバン"
+    when "fish", pluralize("fish")
+      message['text'] = "魚"
+    when "fruit", pluralize("fruit")
+      message['text'] = "果物"
+    when "flower", pluralize("flower")
+      message['text'] = "花"
     else
-      message = {
-        type: 'text',
-        text: "ん？なんか言った？"
-      }
+      message['text'] = "Could you please speak English?"
     end
 
     client.reply_message(token, message)
-    
   end
 
 
