@@ -11,6 +11,60 @@ class WebhookController < ApplicationController
     }
   end
 
+  def reply(input, token)
+    case input
+    when "あ"
+      message = {
+        type: 'text',
+        text: "「あ」は一番しょうもないで。"
+      }
+    when "dog"
+      message = {
+        type: 'text',
+        text: "犬"
+      }
+    when "cat"
+      message = {
+        type: 'text',
+        text: "ねこ"
+      }
+    when "egg"
+      message = {
+        type: 'text',
+        text: "卵"
+      }
+    when "bag"
+      message = {
+        type: 'text',
+        text: "カバン"
+      }
+    when "fish"
+      message = {
+        type: 'text',
+        text: "魚"
+      }
+    when "fruit"
+      message = {
+        type: 'text',
+        text: "果物"
+      }
+    when "flower"
+      message = {
+        type: 'text',
+        text: "花"
+      }
+    else
+      message = {
+        type: 'text',
+        text: "ん？なんか言った？"
+      }
+    end
+
+    client.reply_message(token, message)
+    
+  end
+
+
   def callback
     #LINEのメッセージAPIがpostしてきた中身が取れる
     body = request.body.read
@@ -21,62 +75,14 @@ class WebhookController < ApplicationController
       head 470
     end
 
-
-
     events = client.parse_events_from(body)
     events.each { |event|
       case event
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
-          case event.message['text']
-          when "あ"
-            message = {
-              type: 'text',
-              text: "「あ」は一番しょうもないで。"
-            }
-          when "dog"
-            message = {
-              type: 'text',
-              text: "犬"
-            }
-          when "cat"
-            message = {
-              type: 'text',
-              text: "ねこ"
-            }
-          when "egg"
-            message = {
-              type: 'text',
-              text: "卵"
-            }
-          when "bag"
-            message = {
-              type: 'text',
-              text: "カバン"
-            }
-          when "fish"
-            message = {
-              type: 'text',
-              text: "魚"
-            }
-          when "fruit"
-            message = {
-              type: 'text',
-              text: "果物"
-            }
-          when "flower"
-            message = {
-              type: 'text',
-              text: "花"
-            }
-          else
-            message = {
-              type: 'text',
-              text: "ん？なんか言った？"
-            }
-          end
-          client.reply_message(event['replyToken'], message)
+
+          reply(event.message['text'], event['replyToken'])
 
           # logger.debug(event.type)  #detect the type of the data
         when Line::Bot::Event::MessageType::Image, Line::Bot::Event::MessageType::Video
