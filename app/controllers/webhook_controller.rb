@@ -1,3 +1,6 @@
+# require 'net/http'
+# require 'uri'
+# require 'json'
 require 'line/bot'
 #LINEのライブラリをとる。
 
@@ -11,6 +14,35 @@ class WebhookController < ApplicationController
     }
   end
 
+  def ja? input
+    input == "ja"
+  end
+
+  ADDRESS = URI.parse('https://www.googleapis.com/language/translate/v2')
+  KEY = "AIzaSyApmeNSzPpRi_1LEP2zFT7l-DIKIibVF18"
+
+  def translate q #単なる他の引数の書き方
+    params = {
+      q: q,
+      target: "ja",
+      # source: "en"  ここを止めたらレベル３まで行けた。公式ドキュメント参考になった。ログデータを吐き出させて範囲を絞っていくと良い。
+      key: KEY
+    }
+    ADDRESS.query = URI.encode_www_form(params)
+    res = Net::HTTP.get_response(ADDRESS)
+    input_langage = JSON.parse(res.body)["data"]["translations"].first["detectedSourceLanguage"]
+
+    #日本語が入力されたときに英語を返す
+    if ja?(input_langage)
+      params["target"] = "en"
+      ADDRESS.query = URI.encode_www_form(params)
+      res = Net::HTTP.get_response(ADDRESS)
+    end
+
+    result = JSON.parse(res.body)["data"]["translations"].first["translatedText"]
+  end
+
+
   def callback
     #LINEのメッセージAPIがpostしてきた中身が取れる
     body = request.body.read
@@ -21,64 +53,18 @@ class WebhookController < ApplicationController
       head 470
     end
 
-
-
     events = client.parse_events_from(body)
     events.each { |event|
       case event
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
-          case event.message['text']
-          when "あ"
-            message = {
-              type: 'text',
-              text: "「あ」は一番しょうもないで。"
-            }
-          when "dog"
-            message = {
-              type: 'text',
-              text: "犬"
-            }
-          when "cat"
-            message = {
-              type: 'text',
-              text: "ねこ"
-            }
-          when "egg"
-            message = {
-              type: 'text',
-              text: "卵"
-            }
-          when "bag"
-            message = {
-              type: 'text',
-              text: "カバン"
-            }
-          when "fish"
-            message = {
-              type: 'text',
-              text: "魚"
-            }
-          when "fruit"
-            message = {
-              type: 'text',
-              text: "果物"
-            }
-          when "flower"
-            message = {
-              type: 'text',
-              text: "花"
-            }
-          else
-            message = {
-              type: 'text',
-              text: "ん？なんか言った？"
-            }
-          end
+          message = {
+             type: 'text',
+             text: translate(event.message['text'])
+          }
           client.reply_message(event['replyToken'], message)
 
-          # logger.debug(event.type)  #detect the type of the data
         when Line::Bot::Event::MessageType::Image, Line::Bot::Event::MessageType::Video
           response = client.get_message_content(event.message['id'])
           tf = Tempfile.open("content")
