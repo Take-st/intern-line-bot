@@ -1,6 +1,6 @@
-require 'net/http'
-require 'uri'
-require 'json'
+# require 'net/http'
+# require 'uri'
+# require 'json'
 require 'line/bot'
 #LINEのライブラリをとる。
 
@@ -22,7 +22,6 @@ class WebhookController < ApplicationController
   KEY = "AIzaSyApmeNSzPpRi_1LEP2zFT7l-DIKIibVF18"
 
   def translate q #単なる他の引数の書き方
-    # ADDRESS = URI.parse('https://www.googleapis.com/language/translate/v2')
     params = {
       q: q,
       target: "ja",
@@ -35,7 +34,6 @@ class WebhookController < ApplicationController
 
     #日本語が入力されたときに英語を返す
     if ja?(input_langage)
-      # logger.debug(result)
       params["target"] = "en"
       ADDRESS.query = URI.encode_www_form(params)
       res = Net::HTTP.get_response(ADDRESS)
@@ -63,9 +61,8 @@ class WebhookController < ApplicationController
         when Line::Bot::Event::MessageType::Text
           message = {
              type: 'text',
-             text: ""
+             text: translate(event.message['text'])
           }
-          message["text"] = translate event.message['text']
           client.reply_message(event['replyToken'], message)
 
         when Line::Bot::Event::MessageType::Image, Line::Bot::Event::MessageType::Video
