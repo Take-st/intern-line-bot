@@ -1,7 +1,6 @@
 require 'net/http'
 require 'uri'
 require 'json'
-require 'active_support'
 require 'line/bot'
 #LINEのライブラリをとる。
 
@@ -15,39 +14,34 @@ class WebhookController < ApplicationController
     }
   end
 
+  def ja? input
+    input == "ja"
+  end
+
+  ADDRESS = URI.parse('https://www.googleapis.com/language/translate/v2')
+  KEY = "AIzaSyApmeNSzPpRi_1LEP2zFT7l-DIKIibVF18"
 
   def translate q #単なる他の引数の書き方
-    url = URI.parse('https://www.googleapis.com/language/translate/v2')
+    # ADDRESS = URI.parse('https://www.googleapis.com/language/translate/v2')
     params = {
       q: q,
       target: "ja",
       # source: "en"  ここを止めたらレベル３まで行けた。公式ドキュメント参考になった。ログデータを吐き出させて範囲を絞っていくと良い。
-      key: "AIzaSyApmeNSzPpRi_1LEP2zFT7l-DIKIibVF18"
+      key: KEY
     }
-    url.query = URI.encode_www_form(params)
-    res = Net::HTTP.get_response(url)
-    result = JSON.parse(res.body)["data"]["translations"].first["translatedText"]
-    # logger.debug(result)
-    logger.debug(JSON.parse(res.body)["data"]["translations"].first["translatedText"])
-    logger.debug(JSON.parse(res.body)["data"]["translations"].first["detectedSourceLanguage"]) #nil
+    ADDRESS.query = URI.encode_www_form(params)
+    res = Net::HTTP.get_response(ADDRESS)
+    input_langage = JSON.parse(res.body)["data"]["translations"].first["detectedSourceLanguage"]
 
-    #日本語が入力されたときに英語を返すように設計
-    if JSON.parse(res.body)["data"]["translations"].first["detectedSourceLanguage"] == "ja"
-      logger.debug("kokokoko")
-      url = URI.parse('https://www.googleapis.com/language/translate/v2')
-      params = {
-        q: q,
-        target: "en",
-        source: "ja",
-        key: "AIzaSyApmeNSzPpRi_1LEP2zFT7l-DIKIibVF18"
-      }
-      url.query = URI.encode_www_form(params)
-      res = Net::HTTP.get_response(url)
-      result = JSON.parse(res.body)["data"]["translations"].first["translatedText"]
-      logger.debug(result)
+    #日本語が入力されたときに英語を返す
+    if ja?(input_langage)
+      # logger.debug(result)
+      params["target"] = "en"
+      ADDRESS.query = URI.encode_www_form(params)
+      res = Net::HTTP.get_response(ADDRESS)
     end
 
-    return result
+    result = JSON.parse(res.body)["data"]["translations"].first["translatedText"]
   end
 
 
@@ -69,13 +63,11 @@ class WebhookController < ApplicationController
         when Line::Bot::Event::MessageType::Text
           message = {
              type: 'text',
-             text: ""     #event.message['text']
+             text: ""
           }
-
           message["text"] = translate event.message['text']
           client.reply_message(event['replyToken'], message)
 
-          # logger.debug(event.type)  #detect the type of the data
         when Line::Bot::Event::MessageType::Image, Line::Bot::Event::MessageType::Video
           response = client.get_message_content(event.message['id'])
           tf = Tempfile.open("content")
