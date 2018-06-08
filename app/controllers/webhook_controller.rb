@@ -1,3 +1,6 @@
+require 'net/http'
+require 'uri'
+require 'json'
 require 'active_support'
 require 'line/bot'
 #LINEのライブラリをとる。
@@ -12,41 +15,39 @@ class WebhookController < ApplicationController
     }
   end
 
-  def pluralize(word)
-    return word.pluralize
-  end
 
-
-  def reply(input, token)
-    message = {
-      type: 'text',
-      text: ""
+  def translate q #単なる他の引数の書き方
+    url = URI.parse('https://www.googleapis.com/language/translate/v2')
+    params = {
+      q: q,
+      target: "ja",
+      # source: "en"  ここを止めたらレベル３まで行けた。公式ドキュメント参考になった。ログデータを吐き出させて範囲を絞っていくと良い。
+      key: "AIzaSyApmeNSzPpRi_1LEP2zFT7l-DIKIibVF18"
     }
+    url.query = URI.encode_www_form(params)
+    res = Net::HTTP.get_response(url)
+    result = JSON.parse(res.body)["data"]["translations"].first["translatedText"]
+    # logger.debug(result)
+    logger.debug(JSON.parse(res.body)["data"]["translations"].first["translatedText"])
+    logger.debug(JSON.parse(res.body)["data"]["translations"].first["detectedSourceLanguage"]) #nil
 
-    case input
-    when "あ"
-      message['text'] = "あ は一番しょうもないで。"
-    when "a"
-      message['text'] = "a は一番しょうもないで。"
-    when "dog", pluralize("dog")
-      message['text'] = "犬"
-    when "cat", pluralize("cat")
-      message['text'] = "ねこ"
-    when "egg", pluralize("egg")
-      message['text'] = "卵"
-    when "bag", pluralize("bag")
-      message['text'] = "カバン"
-    when "fish", pluralize("fish")
-      message['text'] = "魚"
-    when "fruit", pluralize("fruit")
-      message['text'] = "果物"
-    when "flower", pluralize("flower")
-      message['text'] = "花"
-    else
-      message['text'] = "Could you please speak English?"
+    #日本語が入力されたときに英語を返すように設計
+    if JSON.parse(res.body)["data"]["translations"].first["detectedSourceLanguage"] == "ja"
+      logger.debug("kokokoko")
+      url = URI.parse('https://www.googleapis.com/language/translate/v2')
+      params = {
+        q: q,
+        target: "en",
+        source: "ja",
+        key: "AIzaSyApmeNSzPpRi_1LEP2zFT7l-DIKIibVF18"
+      }
+      url.query = URI.encode_www_form(params)
+      res = Net::HTTP.get_response(url)
+      result = JSON.parse(res.body)["data"]["translations"].first["translatedText"]
+      logger.debug(result)
     end
 
-    client.reply_message(token, message)
+    return result
   end
 
 
@@ -66,8 +67,13 @@ class WebhookController < ApplicationController
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
+          message = {
+             type: 'text',
+             text: ""     #event.message['text']
+          }
 
-          reply(event.message['text'], event['replyToken'])
+          message["text"] = translate event.message['text']
+          client.reply_message(event['replyToken'], message)
 
           # logger.debug(event.type)  #detect the type of the data
         when Line::Bot::Event::MessageType::Image, Line::Bot::Event::MessageType::Video
